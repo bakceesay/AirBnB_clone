@@ -1,4 +1,1 @@
-THis is the Aire BnB project read me file
-
-
-
+This is the Air BnB project read me file

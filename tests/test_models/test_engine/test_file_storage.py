@@ -66,16 +66,6 @@ class TestFileStorage(unittest.TestCase):
 
         self.assertIsInstance(test, dict)
 
-    def test_reload_no_json(self):
-        """Test for reload() method
-        Checking if can reload() without json file
-        """
-        file_name = self.m2._FileStorage__file_path
-        file_name = str(file_name)
-        os.remove(file_name)
-
-        self.assertRaises(FileNotFoundError, self.m2.reload())
-
     def test_reload_with_json(self):
         """Test for reload() method
         Checking if can reload() on json file

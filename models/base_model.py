@@ -1,49 +1,87 @@
 #!/usr/bin/python3
-"""Defines the BaseModel class."""
-import models
-from uuid import uuid4
+"""Entry point for BaseModel"""
+import uuid
 from datetime import datetime
+from copy import deepcopy
+import models
 
 
 class BaseModel:
-    """Represents the BaseModel of the HBnB project."""
+    """Class for BaseModel.
+    Instances of `BaseModel` autoupdate `updated_at` after
+    any change through an overriden `__setattr__` method.
+    """
+    __str_fmt = "[{}] ({}) {}"
 
     def __init__(self, *args, **kwargs):
-        """Initialize a new BaseModel.
+        """Instantiation for BaseModel.
         Args:
-            *args (any): Unused.
-            **kwargs (dict): Key/value pairs of attributes.
+            *args: arguments.
+            **kwargs: keyworded arguments.
         """
-        tform = "%Y-%m-%dT%H:%M:%S.%f"
-        self.id = str(uuid4())
-        self.created_at = datetime.today()
-        self.updated_at = datetime.today()
-        if len(kwargs) != 0:
+        # TODO make time_attrs class attribute?
+        time_attrs = ('created_at', 'updated_at')
+        if kwargs:
             for k, v in kwargs.items():
-                if k == "created_at" or k == "updated_at":
-                    self.__dict__[k] = datetime.strptime(v, tform)
+                if k == "__class__":
+                    continue
+                if k in time_attrs:  # set time attributes from isoformat strs
+                    time_val = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
+                    setattr(self, k, time_val)
                 else:
-                    self.__dict__[k] = v
+                    setattr(self, k, v)
         else:
+            current_time = datetime.now()
+            self.id = str(uuid.uuid4())
+            for a in time_attrs:
+                setattr(self, a, current_time)
             models.storage.new(self)
 
+    def __str__(self):
+        """Magic method for `__str__`
+        Format: [<class name>] (<self.id>) <self.__dict__>
+        """
+        return BaseModel.__str_fmt.format(self.__class__.__name__,
+                                          self.id, self.__dict__)
+        # return "[{}] ({}) {}".format(*args)
+
     def save(self):
-        """Update updated_at with the current datetime."""
-        self.updated_at = datetime.today()
+        """Updates the public instance attr `updated_at`
+        with the current datetime.
+        """
+        super().__setattr__('updated_at', datetime.now())
         models.storage.save()
 
-    def to_dict(self):
-        """Return the dictionary of the BaseModel instance.
-        Includes the key/value pair __class__ representing
-        the class name of the object.
-        """
-        rdict = self.__dict__.copy()
-        rdict["created_at"] = self.created_at.isoformat()
-        rdict["updated_at"] = self.updated_at.isoformat()
-        rdict["__class__"] = self.__class__.__name__
-        return rdict
+    '''
+    def __setattr__(self, name, value):
+        """Magic method for `__setattr__`"""
+        self.save()
+        super().__setattr__(name, value)
+    '''
 
-    def __str__(self):
-        """Return the print/str representation of the BaseModel instance."""
-        clname = self.__class__.__name__
-        return "[{}] ({}) {}".format(clname, self.id, self.__dict__)
+    def to_dict(self):  # TODO make time_attrs class attribute?
+        """Returns a dictionary containing all keys/values of __dict__
+        of the instance.
+        """
+        time_attrs = ('created_at', 'updated_at')
+        d = deepcopy(self.__dict__)
+        d['__class__'] = self.__class__.__name__
+        for k, v in d.items():
+            if k in time_attrs:  # set time attributes to isoformat strs
+                d[k] = v.isoformat()
+        return d
+
+
+if __name__ == '__main__':
+    m = BaseModel()
+    print(m, '\n')
+    m.name = "Holberton"
+    m.num = 89
+    print(m, '\n')
+    m.save()
+    print(m, '\n')
+    j = m.to_dict()
+    print(j)
+    print("JSON of m:")
+    for k in j.keys():
+        print("\t{}: ({}) - {}".format(k, type(j[k]), j[k]))

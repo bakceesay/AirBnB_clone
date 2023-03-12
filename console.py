@@ -75,22 +75,32 @@ of an instance with the given ID of the given class name"""
                     print(instance)
 
     def do_destroy(self, arg):
-        """Deletes an instance based on the class name and id."""
-        args = parse(args)
-        if not args:
+        """destroy <class name> <id>: Deletes the instance
+with the given ID of the given class name"""
+
+        models.storage.reload()
+        args = arg.split()
+        if not arg:
             print("** class name missing **")
-        elif len(args) < 2:
-            print("** instance id missing **")
-        elif args[0] not in models.classes:
+        elif args[0] not in ["BaseModel", "User", "State", "City",
+                             "Amenity", "Place", "Review"]:
             print("** class doesn't exist **")
+
         else:
-            store = models.storage.all()
-            instance = args[0] + '.' + args[1]
-            if instance in store.keys():
-                del store[instance]
-                models.storage.save()
+            if len(args) < 2:
+                print("** instance id missing **")
+
             else:
-                print("** no instance found **")
+                class_name = args[0]
+                instance_id = args[1]
+                key = class_name + "." + instance_id
+
+                if key not in models.storage.all().keys():
+                    print("** no instance found **")
+
+                else:
+                    del models.storage.all()[key]
+                    models.storage.save()
 
     def do_all(self, arg):
         """all [class name]: Prints the string representation
